@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Login — Analytics Project{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="card login-card anim-scale">
+        <div class="card-body p-5">
+            <div class="text-center mb-4">
+                <div class="login-icon mb-3">
+                    <i class="bi bi-shop"></i>
+                </div>
+                <h3 class="fw-bold" style="background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+                    Hardware & Plywood Store
+                </h3>
+                <p class="text-muted small">Marketing ROI & Footfall Analytics System</p>
+            </div>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3 anim-fade-up anim-d1">
+                    <label for="username" class="form-label fw-semibold small">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" class="form-control" id="username"
+                               name="username" placeholder="Enter username" required autofocus>
+                    </div>
+                </div>
+                <div class="mb-4 anim-fade-up anim-d2">
+                    <label for="password" class="form-label fw-semibold small">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                        <input type="password" class="form-control" id="password"
+                               name="password" placeholder="Enter password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-login w-100 py-2 anim-fade-up anim-d3">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Stock Movement Log — Analytics Project{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+    <!-- Header -->
+    <div class="welcome-bar anim-fade-up">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-journal-text me-2"></i>Stock Movement Log</h4>
+                <p class="mb-0" style="color:rgba(255,255,255,.7)">All stock entries — filter by product, month & year</p>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <form method="GET" action="{{ url_for('stock_log') }}" class="d-flex align-items-center gap-2 flex-wrap">
+            <select name="product" class="form-select" onchange="this.form.submit()" style="min-width:180px;border-radius:var(--radius-sm)">
+                <option value="all" {% if product_filter == 'all' %}selected{% endif %}>All Products</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" {% if product_filter|string == p.id|string %}selected{% endif %}>
+                    {{ p.name }}
+                </option>
+                {% endfor %}
+            </select>
+            
+            <select name="month" class="form-select" onchange="this.form.submit()" style="min-width:140px;border-radius:var(--radius-sm)">
+                <option value="all" {% if month_filter == 'all' %}selected{% endif %}>All Months</option>
+                {% for m in months %}
+                <option value="{{ m }}" {% if month_filter == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="year" class="form-select" onchange="this.form.submit()" style="min-width:120px;border-radius:var(--radius-sm)">
+                <option value="all" {% if year_filter == 'all' %}selected{% endif %}>All Years</option>
+                {% for y in years %}
+                <option value="{{ y }}" {% if year_filter|string == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            
+            <a href="{{ url_for('stock_log') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i> Reset
+            </a>
+        </form>
+    </div>
+
+    <!-- Entries table with scrollable container -->
+    <div class="card shadow-sm mb-4 anim-fade-up anim-d1" style="border-radius:var(--radius);overflow:hidden">
+        <!-- Bulk Actions Bar -->
+        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <label class="form-check-label fw-semibold">
+                    <input type="checkbox" id="selectAll" class="form-check-input me-2" onclick="toggleSelectAll(this)">
+                    Select All
+                </label>
+                <span class="ms-3 text-muted small" id="selectedCount">0 selected</span>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" id="deleteSelectedBtn" onclick="deleteSelected()" disabled>
+                <i class="bi bi-trash3 me-1"></i> Delete Selected
+            </button>
+        </div>
+        
+        <!-- Scrollable Table Container -->
+        <div style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+            <table class="table mb-0 stock-log-table">
+                <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 10;">
+                    <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" class="form-check-input" disabled style="visibility:hidden">
+                        </th>
+                        <th>DATE</th>
+                        <th>PRODUCT</th>
+                        <th>TYPE</th>
+                        <th class="text-end">QTY</th>
+                        <th class="text-end">PRICE/UNIT</th>
+                        <th class="text-end">TOTAL VALUE</th>
+                        <th>NOTE</th>
+                        <th class="text-center">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in entries %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input entry-checkbox" value="{{ e.id }}" onchange="updateSelectedCount()">
+                        </td>
+                        <td>{{ e.entry_date }}</td>
+                        <td class="fw-semibold">{{ e.product_name }}</td>
+                        <td>
+                            {% if e.entry_type == 'OPENING' %}
+                                <span class="badge-type opening">OPENING</span>
+                            {% elif e.entry_type == 'RECEIVED' %}
+                                <span class="badge-type received">RECEIVED</span>
+                            {% else %}
+                                <span class="badge-type sold">SOLD</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ "%.1f"|format(e.qty|float) }} {{ e.unit }}</td>
+                        <td class="text-end">Rs {{ e.price_per_unit|float|numfmt(2) }}</td>
+                        <td class="text-end fw-semibold">Rs {{ e.total_value|float|numfmt }}</td>
+                        <td class="text-muted small">{{ e.note or '' }}</td>
+                        <td class="text-center">
+                            <form method="POST" action="{{ url_for('delete_entry', eid=e.id) }}"
+                                  onsubmit="return confirm('Delete this entry?')">
+                                <button class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash3"></i> Del
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not entries %}
+                    <tr><td colspan="9" class="text-center text-muted py-4">No entries found</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- JavaScript for multi-select -->
+    <script>
+    const bulkDeleteUrl = "{{ url_for('delete_entries_bulk') }}";
+    
+    function toggleSelectAll(checkbox) {
+        const checkboxes = document.querySelectorAll('.entry-checkbox');
+        checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        updateSelectedCount();
+    }
+    
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+        const count = checkboxes.length;
+        document.getElementById('selectedCount').textContent = count + ' selected';
+        document.getElementById('deleteSelectedBtn').disabled = count === 0;
+        
+        // Update "Select All" checkbox state
+        const allCheckboxes = document.querySelectorAll('.entry-checkbox');
+        const selectAllCb = document.getElementById('selectAll');
+        if (allCheckboxes.length > 0) {
+            selectAllCb.checked = count === allCheckboxes.length;
+            selectAllCb.indeterminate = count > 0 && count < allCheckboxes.length;
+        }
+    }
+    
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (ids.length === 0) {
+            alert('Please select at least one entry to delete.');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to delete ${ids.length} selected entries? This action cannot be undone.`)) {
+            return;
+        }
+        
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = bulkDeleteUrl;
+        
+        ids.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'entry_ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+    </script>
+
+    <!-- Add New Entry -->
+    <div class="card shadow-sm mb-4 anim-fade-up anim-d2">
+        <div class="card-header grad-dark fw-semibold">
+            <i class="bi bi-plus-circle me-1"></i> Add New Stock Entry
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('add_stock_entry') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Date</label>
+                        <input type="date" class="form-control" name="entry_date" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Product</label>
+                        <select name="product_id" class="form-select" required>
+                            <option value="">Select...</option>
+                            {% for p in products %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Type</label>
+                        <select name="entry_type" class="form-select" required>
+                            <option value="OPENING">OPENING</option>
+                            <option value="RECEIVED">RECEIVED</option>
+                            <option value="SOLD">SOLD</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-semibold">Qty</label>
+                        <input type="number" step="0.1" min="0.1" class="form-control"
+                               name="qty" placeholder="0" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Price/Unit (Rs)</label>
+                        <input type="number" step="0.01" min="0" class="form-control"
+                               name="price_per_unit" placeholder="0" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Note</label>
+                        <input type="text" class="form-control" name="note" placeholder="Optional">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-gradient btn-grad-success w-100">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="text-center anim-fade-up anim-d3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-gradient btn-grad-primary me-3 px-4">
+            <i class="bi bi-arrow-left me-1"></i> Back to Admin Overview
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-gradient btn-grad-success px-4">
+            <i class="bi bi-house me-1"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

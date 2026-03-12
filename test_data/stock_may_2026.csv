@@ -1,0 +1,9 @@
+Month,Item,Unit,Opening_Qty,Opening_Value,Received_Qty,Received_Value,Sold_Qty,Sold_Value,Closing_Qty,Closing_Value,Remarks
+May,Glass,SFT,240,371520,280,433440,185,286380,335,518580,New supplier added
+May,Plywood,SFT,260,218400,250,210000,195,163800,315,264600,Higher demand
+May,Hardwares,NOS,1717,180000,1700,178500,1350,141750,2067,216750,Summer sales
+May,Beeding,RFT,2950,473600,2100,336000,2800,448000,2250,361600,Festival stock
+May,Laminates,NOS,365,215350,520,324800,410,256250,475,283900,New designs
+May,Doors,NOS,200,240000,230,276000,180,216000,250,300000,Premium range added
+May,Cement,BAG,450,135000,600,180000,520,156000,530,159000,Price increased
+May,Steel Rods,TON,12,360000,15,450000,18,540000,9,270000,High volume month

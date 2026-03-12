@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+{% block title %}Monthly Stock History — Analytics Project{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+    <!-- Header -->
+    <div class="welcome-bar d-flex justify-content-between align-items-center anim-fade-up">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-calendar3 me-2"></i>Monthly Stock History</h4>
+            <p class="mb-0" style="color:rgba(255,255,255,.7)">Browse month-wise stock, sales &amp; marketing data with visual insights</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Month selector -->
+    <div class="glass-card p-4 mb-4 anim-fade-up anim-d1">
+        <form method="GET" action="{{ url_for('monthly_history') }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label fw-semibold"><i class="bi bi-calendar-event me-1"></i> Select Month</label>
+                    <select name="month" class="form-select" style="min-width:180px" required>
+                        <option value="">-- Choose --</option>
+                        {% for m in available_months %}
+                        <option value="{{ m.month_name }}"
+                                {% if selected_month == m.month_name and selected_year|string == m.year|string %}selected{% endif %}>
+                            {{ m.month_name }} {{ m.year }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <input type="hidden" name="year" value="2025">
+                    <button type="submit" class="btn btn-gradient btn-grad-primary px-4">
+                        <i class="bi bi-search me-1"></i> View
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if stock_data %}
+
+    <!-- ═══════════ INSIGHTS PANEL ═══════════ -->
+    {% if insights %}
+    <div class="glass-card p-4 mb-4 anim-fade-up anim-d2" style="border-left:4px solid #667eea">
+        <h5 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2" style="color:#f7971e"></i>Key Insights — {{ selected_month }} {{ selected_year }}</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <span class="me-2" style="font-size:1.5rem">🏆</span>
+                    <div>
+                        <div class="fw-semibold" style="color:#11998e">Top Selling Product (by Value)</div>
+                        <div class="fs-5 fw-bold">{{ insights.best_product }}</div>
+                        <div class="text-muted small">Revenue: Rs {{ insights.best_value|numfmt }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <span class="me-2" style="font-size:1.5rem">📦</span>
+                    <div>
+                        <div class="fw-semibold" style="color:#667eea">Most Quantity Sold</div>
+                        <div class="fs-5 fw-bold">{{ insights.top_qty_product }}</div>
+                        <div class="text-muted small">{{ "%.0f"|format(insights.top_qty) }} units sold</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <span class="me-2" style="font-size:1.5rem">⚠️</span>
+                    <div>
+                        <div class="fw-semibold" style="color:#f5576c">Lowest Selling Product</div>
+                        <div class="fs-5 fw-bold">{{ insights.worst_product }}</div>
+                        <div class="text-muted small">Revenue: Rs {{ insights.worst_value|numfmt }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Highest sales month comparison -->
+        {% if all_months_sales %}
+        <hr class="my-3">
+        <div class="d-flex align-items-start">
+            <span class="me-2" style="font-size:1.5rem">📊</span>
+            <div>
+                <div class="fw-semibold" style="color:#764ba2">Highest Sales Month So Far</div>
+                {% set best_month = all_months_sales|sort(attribute='total_sales', reverse=true)|first %}
+                <div class="fs-5 fw-bold">{{ best_month.month_name }} {{ best_month.year }} — Rs {{ best_month.total_sales|float|numfmt }}</div>
+                {% if selected_month == best_month.month_name %}
+                <span class="badge bg-success mt-1"><i class="bi bi-star-fill me-1"></i>This is the best month!</span>
+                {% else %}
+                <span class="text-muted small">Current month ({{ selected_month }}): Rs {{ total_sales|float|numfmt }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Stock Summary Table -->
+    <div class="card mb-4 anim-fade-up anim-d2" style="overflow:hidden">
+        <div class="card-header grad-success fw-semibold py-3">
+            <i class="bi bi-box-seam me-1"></i>
+            Stock Summary — {{ selected_month }} {{ selected_year }}
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0 history-table">
+                <thead>
+                    <tr>
+                        <th>PRODUCT</th>
+                        <th>UNIT</th>
+                        <th class="text-end">OPENING QTY</th>
+                        <th class="text-end">OPENING VALUE</th>
+                        <th class="text-end">RECEIVED QTY</th>
+                        <th class="text-end">RECEIVED VALUE</th>
+                        <th class="text-end">SOLD QTY</th>
+                        <th class="text-end">SOLD VALUE</th>
+                        <th class="text-end">CLOSING QTY</th>
+                        <th class="text-end">CLOSING VALUE</th>
+                        <th>REMARKS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in stock_data %}
+                    <tr>
+                        <td class="fw-semibold">{{ r.name }}</td>
+                        <td>{{ r.unit }}</td>
+                        <td class="text-end">{{ "%.0f"|format(r.opening_qty|float) }}</td>
+                        <td class="text-end">Rs {{ r.opening_value|float|numfmt }}</td>
+                        <td class="text-end">{{ "%.0f"|format(r.received_qty|float) }}</td>
+                        <td class="text-end">Rs {{ r.received_value|float|numfmt }}</td>
+                        <td class="text-end fw-semibold" style="color:#e74c3c">{{ "%.0f"|format(r.sold_qty|float) }}</td>
+                        <td class="text-end" style="color:#e74c3c">Rs {{ r.sold_value|float|numfmt }}</td>
+                        <td class="text-end">
+                            <span class="badge-closing">{{ "%.0f"|format(r.closing_qty|float) }}</span>
+                        </td>
+                        <td class="text-end">Rs {{ r.closing_value|float|numfmt }}</td>
+                        <td class="text-muted small">{{ r.remarks or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" class="text-end fw-bold">Total Sales Value for {{ selected_month }}:</td>
+                        <td class="text-end fw-bold" style="color:#e74c3c">Rs {{ total_sales|float|numfmt }}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══════════ CHARTS ═══════════ -->
+    <div class="row g-4 mb-4">
+
+        <!-- Bar Chart: Sales Value by Product -->
+        <div class="col-lg-6 anim-fade-left anim-d3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-bar-chart-fill" style="color:#667eea"></i>
+                    Sales Value by Product
+                </div>
+                <p class="text-muted small px-3 mb-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This chart shows how much revenue (in Rs) each product generated in {{ selected_month }}.
+                    The taller the bar, the higher the sales. Values are displayed on top of each bar.
+                </p>
+                <canvas id="salesValueChart" height="280"></canvas>
+            </div>
+        </div>
+
+        <!-- Doughnut: Sold Quantity Distribution -->
+        <div class="col-lg-6 anim-fade-right anim-d3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-pie-chart-fill" style="color:#764ba2"></i>
+                    Sold Quantity Share
+                </div>
+                <p class="text-muted small px-3 mb-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This doughnut shows the percentage share of total units sold per product.
+                    Larger slices mean more units were sold. Hover to see exact numbers.
+                </p>
+                <canvas id="soldQtyChart" height="280"></canvas>
+            </div>
+        </div>
+
+        <!-- Grouped Bar: Stock Flow (Opening / Received / Sold / Closing) -->
+        <div class="col-lg-7 anim-fade-left anim-d4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-layers-fill" style="color:#11998e"></i>
+                    Stock Flow Comparison
+                </div>
+                <p class="text-muted small px-3 mb-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Compares Opening stock, Received, Sold, and Closing stock for each product.
+                    This helps you understand stock movement — which products are moving fast and which are piling up.
+                </p>
+                <canvas id="stockFlowChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Pie: Marketing Channel Spend -->
+        {% if marketing_summary and marketing_summary.days %}
+        <div class="col-lg-5 anim-fade-right anim-d4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-megaphone-fill" style="color:#f5576c"></i>
+                    Marketing Spend by Channel
+                </div>
+                <p class="text-muted small px-3 mb-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Shows how your marketing budget was split across Digital, Print and Outdoor channels.
+                    The amount (Rs) and percentage are shown on each slice.
+                </p>
+                <canvas id="mktPieChart" height="280"></canvas>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Line Chart: Month-on-Month Sales Trend -->
+        {% if all_months_sales|length > 1 %}
+        <div class="col-12 anim-fade-up anim-d5">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-graph-up-arrow" style="color:#38ef7d"></i>
+                    Month-on-Month Total Sales Trend
+                </div>
+                <p class="text-muted small px-3 mb-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This line chart tracks your total sales across all available months.
+                    It helps you spot which months performed best and identify sales trends over time.
+                    The highlighted point marks the currently selected month.
+                </p>
+                <canvas id="monthTrendChart" height="200"></canvas>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Marketing Summary Cards -->
+    {% if marketing_summary and marketing_summary.days %}
+    <div class="card mb-4 anim-fade-up anim-d5" style="overflow:hidden">
+        <div class="card-header grad-primary fw-semibold py-3">
+            <i class="bi bi-megaphone me-1"></i>
+            Marketing Spend Summary — {{ selected_month }} {{ selected_year }}
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <div class="stat-card stat-purple text-center anim-scale anim-d1">
+                        <div class="stat-icon bg-purple mx-auto mb-2"><i class="bi bi-calendar-check"></i></div>
+                        <div class="text-muted small">Days Tracked</div>
+                        <div class="fs-4 fw-bold">{{ marketing_summary.days }}</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card stat-blue text-center anim-scale anim-d2">
+                        <div class="stat-icon bg-blue mx-auto mb-2"><i class="bi bi-phone"></i></div>
+                        <div class="text-muted small">Digital Spend</div>
+                        <div class="fs-5 fw-bold" style="color:#4facfe">Rs {{ marketing_summary.total_digital|float|numfmt }}</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card stat-green text-center anim-scale anim-d3">
+                        <div class="stat-icon bg-green mx-auto mb-2"><i class="bi bi-newspaper"></i></div>
+                        <div class="text-muted small">Print Spend</div>
+                        <div class="fs-5 fw-bold" style="color:#11998e">Rs {{ marketing_summary.total_print|float|numfmt }}</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card stat-gold text-center anim-scale anim-d4">
+                        <div class="stat-icon bg-gold mx-auto mb-2"><i class="bi bi-signpost-2"></i></div>
+                        <div class="text-muted small">Outdoor Spend</div>
+                        <div class="fs-5 fw-bold" style="color:#f7971e">Rs {{ marketing_summary.total_outdoor|float|numfmt }}</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card stat-green text-center anim-scale anim-d5">
+                        <div class="stat-icon bg-green mx-auto mb-2"><i class="bi bi-people-fill"></i></div>
+                        <div class="text-muted small">Total Walk-Ins</div>
+                        <div class="fs-4 fw-bold" style="color:#38ef7d">{{ marketing_summary.total_walkins|int }}</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card stat-red text-center anim-scale anim-d5">
+                        <div class="stat-icon bg-red mx-auto mb-2"><i class="bi bi-currency-rupee"></i></div>
+                        <div class="text-muted small">Total Mkt Sales</div>
+                        <div class="fs-5 fw-bold" style="color:#fc5c7d">Rs {{ marketing_summary.total_mkt_sales|float|numfmt }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <span class="btn btn-gradient btn-grad-dark" style="cursor:default;pointer-events:none;font-size:.95rem">
+                    <i class="bi bi-cash-coin me-1"></i> Total Marketing Spend: Rs {{ marketing_summary.total_spend|float|numfmt }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif selected_month %}
+    <div class="alert alert-info anim-fade-up">
+        <i class="bi bi-info-circle me-1"></i> No data found for {{ selected_month }} {{ selected_year }}.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if stock_data %}
+<script id="chartData" type="application/json">{{ chart_data_json|safe }}</script>
+<script>
+(function() {
+    Chart.register(ChartDataLabels);
+    const data = JSON.parse(document.getElementById('chartData').textContent);
+
+    const COLORS = [
+        'rgba(102,126,234,.85)', 'rgba(118,75,162,.85)', 'rgba(17,153,142,.85)',
+        'rgba(245,87,108,.85)',  'rgba(247,151,30,.85)',  'rgba(79,172,254,.85)',
+        'rgba(56,239,125,.85)',  'rgba(252,92,125,.85)'
+    ];
+    const BORDERS = COLORS.map(c => c.replace(',.85)', ',1)'));
+
+    function fmtRs(v) {
+        if (v >= 100000) return 'Rs ' + (v/100000).toFixed(1) + 'L';
+        if (v >= 1000)   return 'Rs ' + (v/1000).toFixed(1) + 'K';
+        return 'Rs ' + v.toLocaleString();
+    }
+    function fmtQty(v) { return v >= 1000 ? (v/1000).toFixed(1) + 'K' : Math.round(v).toString(); }
+
+    /* ── 1) Sales Value Bar Chart ── */
+    new Chart(document.getElementById('salesValueChart'), {
+        type: 'bar',
+        data: {
+            labels: data.product_names,
+            datasets: [{
+                label: 'Sold Value (Rs)',
+                data: data.sold_value,
+                backgroundColor: COLORS,
+                borderColor: BORDERS,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            layout: { padding: { top: 30 } },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end', align: 'top', color: '#333', font: { weight: 'bold', size: 11 },
+                    formatter: v => fmtRs(v)
+                },
+                tooltip: { callbacks: { label: ctx => 'Rs ' + ctx.parsed.y.toLocaleString() } }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => fmtRs(v) }, grid: { color: 'rgba(0,0,0,.05)' } },
+                x: { grid: { display: false } }
+            },
+            animation: { duration: 1200, easing: 'easeOutQuart' }
+        }
+    });
+
+    /* ── 2) Sold Qty Doughnut ── */
+    var totalSoldQty = data.sold_qty.reduce((a,b) => a+b, 0);
+    new Chart(document.getElementById('soldQtyChart'), {
+        type: 'doughnut',
+        data: {
+            labels: data.product_names,
+            datasets: [{
+                data: data.sold_qty,
+                backgroundColor: COLORS,
+                borderColor: '#fff',
+                borderWidth: 3,
+                hoverOffset: 12
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right', labels: { padding: 14, usePointStyle: true, font: { size: 11 } } },
+                datalabels: {
+                    color: '#fff', font: { weight: 'bold', size: 11 },
+                    formatter: (v) => {
+                        var pct = totalSoldQty > 0 ? ((v / totalSoldQty) * 100).toFixed(1) : 0;
+                        return pct + '%';
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            var pct = totalSoldQty > 0 ? ((ctx.parsed / totalSoldQty) * 100).toFixed(1) : 0;
+                            return ctx.label + ': ' + Math.round(ctx.parsed) + ' units (' + pct + '%)';
+                        }
+                    }
+                }
+            },
+            cutout: '55%',
+            animation: { animateRotate: true, duration: 1200 }
+        }
+    });
+
+    /* ── 3) Stock Flow Grouped Bar ── */
+    new Chart(document.getElementById('stockFlowChart'), {
+        type: 'bar',
+        data: {
+            labels: data.product_names,
+            datasets: [
+                { label: 'Opening',  data: data.opening_qty,  backgroundColor: 'rgba(102,126,234,.7)', borderRadius: 6 },
+                { label: 'Received', data: data.received_qty, backgroundColor: 'rgba(79,172,254,.7)',  borderRadius: 6 },
+                { label: 'Sold',     data: data.sold_qty,     backgroundColor: 'rgba(252,92,125,.7)',  borderRadius: 6 },
+                { label: 'Closing',  data: data.closing_qty,  backgroundColor: 'rgba(56,239,125,.7)',  borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            layout: { padding: { top: 25 } },
+            plugins: {
+                legend: { labels: { padding: 14, usePointStyle: true } },
+                datalabels: {
+                    anchor: 'end', align: 'top', color: '#555', font: { size: 9, weight: 'bold' },
+                    formatter: v => fmtQty(v),
+                    display: ctx => ctx.dataset.data[ctx.dataIndex] > 0
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' } },
+                x: { grid: { display: false } }
+            },
+            animation: { duration: 1200, easing: 'easeOutQuart' }
+        }
+    });
+
+    /* ── 4) Marketing Channel Pie ── */
+    if (data.mkt_channels && document.getElementById('mktPieChart')) {
+        var totalMkt = data.mkt_values.reduce((a,b) => a+b, 0);
+        new Chart(document.getElementById('mktPieChart'), {
+            type: 'pie',
+            data: {
+                labels: data.mkt_channels,
+                datasets: [{
+                    data: data.mkt_values,
+                    backgroundColor: ['rgba(102,126,234,.85)', 'rgba(17,153,142,.85)', 'rgba(247,151,30,.85)'],
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true } },
+                    datalabels: {
+                        color: '#fff', font: { weight: 'bold', size: 12 },
+                        formatter: (v, ctx) => {
+                            var pct = totalMkt > 0 ? ((v / totalMkt) * 100).toFixed(1) : 0;
+                            return 'Rs ' + v.toLocaleString() + '\n(' + pct + '%)';
+                        }
+                    },
+                    tooltip: {
+                        callbacks: { label: ctx => ctx.label + ': Rs ' + ctx.parsed.toLocaleString() }
+                    }
+                },
+                animation: { animateRotate: true, duration: 1200 }
+            }
+        });
+    }
+
+    /* ── 5) Month-on-Month Sales Trend ── */
+    if (data.all_months && data.all_months.length > 1 && document.getElementById('monthTrendChart')) {
+        var selectedLabel = '{{ selected_month }} {{ selected_year }}';
+        var pointBg = data.all_months.map(m => m === selectedLabel ? '#fc5c7d' : 'rgba(102,126,234,.85)');
+        var pointR  = data.all_months.map(m => m === selectedLabel ? 8 : 4);
+        var maxVal  = Math.max(...data.all_months_sales);
+
+        new Chart(document.getElementById('monthTrendChart'), {
+            type: 'line',
+            data: {
+                labels: data.all_months,
+                datasets: [{
+                    label: 'Total Sales (Rs)',
+                    data: data.all_months_sales,
+                    borderColor: 'rgba(102,126,234,1)',
+                    backgroundColor: 'rgba(102,126,234,.15)',
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: pointBg,
+                    pointRadius: pointR,
+                    pointHoverRadius: 10,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                layout: { padding: { top: 30 } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end', align: 'top', color: '#333', font: { weight: 'bold', size: 11 },
+                        formatter: v => fmtRs(v),
+                        backgroundColor: ctx => {
+                            var label = data.all_months[ctx.dataIndex];
+                            return data.all_months_sales[ctx.dataIndex] === maxVal ? 'rgba(56,239,125,.2)' : 'rgba(255,255,255,.7)';
+                        },
+                        borderRadius: 4, padding: { left: 6, right: 6, top: 2, bottom: 2 }
+                    },
+                    tooltip: { callbacks: { label: ctx => 'Total Sales: Rs ' + ctx.parsed.y.toLocaleString() } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => fmtRs(v) }, grid: { color: 'rgba(0,0,0,.05)' } },
+                    x: { grid: { display: false } }
+                },
+                animation: { duration: 1500, easing: 'easeOutQuart' }
+            }
+        });
+    }
+})();
+</script>
+{% endif %}
+{% endblock %}

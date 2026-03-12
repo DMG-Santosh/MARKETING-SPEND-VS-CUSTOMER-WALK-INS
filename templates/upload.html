@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Upload Data — Analytics Project{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+    <!-- Header -->
+    <div class="welcome-bar d-flex justify-content-between align-items-center anim-fade-up">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-cloud-upload me-2"></i>Upload New Data</h4>
+            <p class="mb-0" style="color:rgba(255,255,255,.7)">Import CSV, Excel, PDF or Word files to update your database</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+
+        <!-- Single Unified Upload -->
+        <div class="col-lg-8 anim-fade-up anim-d1">
+            <div class="glass-card p-4">
+                <div class="text-center mb-4">
+                    <div class="stat-icon bg-purple mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Upload Store Data</h5>
+                    <p class="text-muted small mb-0">
+                        Upload any store-related data file and the system will automatically detect the data type.<br>
+                        Supported formats: <strong>CSV, Excel (.xlsx), PDF, Word (.docx)</strong>
+                    </p>
+                </div>
+
+                <form method="POST" action="{{ url_for('upload_data') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select File</label>
+                        <input type="file" class="form-control form-control-lg" name="file"
+                               accept=".csv,.xlsx,.xls,.pdf,.docx" required id="fileInput">
+                        <div class="form-text">Make sure the data is clean — no empty rows, null values, or formatting errors.</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">Year (for stock data)</label>
+                        <input type="number" class="form-control" name="year" value="2025"
+                               min="2020" max="2030" style="max-width:120px" id="yearInput">
+                        <div class="form-text">Only used if stock data is detected.</div>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-gradient btn-grad-primary btn-lg px-5">
+                            <i class="bi bi-upload me-1"></i> Upload Data
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Data type hints -->
+                <div class="row g-3 mt-4 pt-3 border-top">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-box-seam me-2 mt-1" style="color:#11998e;font-size:1.2rem"></i>
+                            <div>
+                                <div class="fw-semibold small">Stock & Sales Data</div>
+                                <p class="text-muted small mb-0">Auto-detected when columns include product/item names, opening, received, sold, closing quantities.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-megaphone me-2 mt-1" style="color:#667eea;font-size:1.2rem"></i>
+                            <div>
+                                <div class="fw-semibold small">Marketing Spend Data</div>
+                                <p class="text-muted small mb-0">Auto-detected when columns include digital spend, print spend, outdoor spend, walk-ins, sales amount.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Upload History / Results -->
+    {% if upload_result %}
+    <div class="glass-card p-4 mt-4 anim-fade-up anim-d2 {% if upload_result.success %}border-success{% else %}border-danger{% endif %}" style="border-left-width:4px">
+        <h5 class="fw-bold mb-2">
+            {% if upload_result.success %}
+            <i class="bi bi-check-circle-fill me-2" style="color:#11998e"></i>Upload Successful
+            {% else %}
+            <i class="bi bi-exclamation-triangle-fill me-2" style="color:#f5576c"></i>Upload Failed
+            {% endif %}
+        </h5>
+        <p class="mb-1">{{ upload_result.message }}</p>
+        {% if upload_result.details %}
+        <ul class="small text-muted mb-0 mt-2">
+            {% for d in upload_result.details %}
+            <li>{{ d }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Instructions -->
+    <div class="glass-card p-4 mt-4 anim-fade-up anim-d3">
+        <h5 class="fw-bold mb-3"><i class="bi bi-question-circle me-2" style="color:#f7971e"></i>How It Works</h5>
+        <div class="row g-4">
+            <div class="col-md-3 text-center">
+                <div class="stat-icon bg-purple mx-auto mb-2"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                <div class="fw-semibold">1. Choose File</div>
+                <p class="text-muted small">Select a CSV, Excel, PDF or Word file</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-icon bg-blue mx-auto mb-2"><i class="bi bi-gear"></i></div>
+                <div class="fw-semibold">2. Auto Detect & Extract</div>
+                <p class="text-muted small">System identifies data type and extracts records automatically</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-icon bg-green mx-auto mb-2"><i class="bi bi-database-check"></i></div>
+                <div class="fw-semibold">3. Update Database</div>
+                <p class="text-muted small">Products, stock and marketing tables are updated</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-icon bg-gold mx-auto mb-2"><i class="bi bi-graph-up"></i></div>
+                <div class="fw-semibold">4. View Results</div>
+                <p class="text-muted small">Charts, predictions & history update automatically</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var yearInput = document.getElementById('yearInput');
+    if (yearInput && yearInput.value === '2025') {
+        yearInput.value = new Date().getFullYear();
+    }
+});
+</script>
+{% endblock %}
