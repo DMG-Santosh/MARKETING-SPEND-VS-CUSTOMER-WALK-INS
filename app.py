@@ -23,7 +23,6 @@ from config import Config
 
 # ── App setup ────────────────────────────────────────────────
 app = Flask(__name__)
-print("Hello World!")
 app.config.from_object(Config)
 
 MONTH_ORDER = [
