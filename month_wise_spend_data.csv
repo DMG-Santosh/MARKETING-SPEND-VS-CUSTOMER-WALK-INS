@@ -9,7 +9,6 @@ Date,Month,Day_Type,Digital_Spend,Print_Spend,Outdoor_Spend,Total_Spend,Customer
 08-03-2025,March,Weekend,2100,900,700,3700,85,102000
 09-03-2025,March,Weekend,1900,850,650,3400,80,96000
 10-03-2025,March,Weekday,1200,500,300,2000,39,46800
-,,,,,,,,
 01-04-2025,April,Weekday,1000,400,300,1700,33,39600
 02-04-2025,April,Weekday,1100,450,350,1900,36,43200
 03-04-2025,April,Weekday,1300,500,400,2200,42,50400
@@ -20,7 +19,6 @@ Date,Month,Day_Type,Digital_Spend,Print_Spend,Outdoor_Spend,Total_Spend,Customer
 08-04-2025,April,Weekday,1250,550,350,2150,41,49200
 09-04-2025,April,Weekday,1350,600,400,2350,44,52800
 10-04-2025,April,Weekday,1400,650,450,2500,47,56400
-,,,,,,,,
 01-05-2025,May,Weekday,1100,450,300,1850,35,42000
 02-05-2025,May,Weekend,1700,700,500,2900,70,84000
 03-05-2025,May,Weekday,1200,500,350,2050,38,45600
@@ -31,7 +29,6 @@ Date,Month,Day_Type,Digital_Spend,Print_Spend,Outdoor_Spend,Total_Spend,Customer
 08-05-2025,May,Weekday,1250,500,350,2100,40,48000
 09-05-2025,May,Weekday,1350,550,400,2300,43,51600
 10-05-2025,May,Weekend,2000,850,650,3500,82,98400
-,,,,,,,,
 01-06-2025,June,Weekday,1150,450,300,1900,36,43200
 02-06-2025,June,Weekday,1250,500,350,2100,39,46800
 03-06-2025,June,Weekend,1850,750,550,3150,74,88800
@@ -42,7 +39,6 @@ Date,Month,Day_Type,Digital_Spend,Print_Spend,Outdoor_Spend,Total_Spend,Customer
 08-06-2025,June,Weekday,1200,500,350,2050,38,45600
 09-06-2025,June,Weekday,1350,550,400,2300,42,50400
 10-06-2025,June,Weekday,1450,600,450,2500,46,55200
-,,,,,,,,
 01-07-2025,July,Weekday,1200,500,350,2050,39,46800
 02-07-2025,July,Weekend,1900,800,600,3300,78,93600
 03-07-2025,July,Weekday,1300,550,400,2250,41,49200
